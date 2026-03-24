@@ -36,6 +36,18 @@ class CommandScheduler: ObservableObject {
         saveCommands()
     }
 
+    func updateCommand(_ id: UUID, command: String, executeAt: Date, targetSessionIndex: Int, repeatMode: ScheduledCommand.RepeatMode, note: String, isEnabled: Bool) {
+        if let index = commands.firstIndex(where: { $0.id == id }) {
+            commands[index].command = command
+            commands[index].executeAt = executeAt
+            commands[index].targetSessionIndex = targetSessionIndex
+            commands[index].repeatMode = repeatMode
+            commands[index].note = note
+            commands[index].isEnabled = isEnabled
+            saveCommands()
+        }
+    }
+
     func toggleCommand(_ id: UUID) {
         if let index = commands.firstIndex(where: { $0.id == id }) {
             commands[index].isEnabled.toggle()
@@ -74,10 +86,9 @@ class CommandScheduler: ObservableObject {
             let session = appState.sessionForScheduledCommand(command)
             session?.sendCommand(command.command)
 
-            let logEntry = "[\(Self.dateFormatter.string(from: Date()))] Executed: \(command.command)"
+            let logEntry = "[\(Self.dateFormatter.string(from: Date()))] 已執行：\(command.command)"
             self.executionLog.append(logEntry)
 
-            // Keep log manageable
             if self.executionLog.count > 200 {
                 self.executionLog.removeFirst(self.executionLog.count - 200)
             }
@@ -94,7 +105,7 @@ class CommandScheduler: ObservableObject {
 
     private func sendNotification(command: ScheduledCommand) {
         let content = UNMutableNotificationContent()
-        content.title = "Scheduled Command Executed"
+        content.title = "排程指令已執行"
         content.body = command.command
         content.sound = .default
 

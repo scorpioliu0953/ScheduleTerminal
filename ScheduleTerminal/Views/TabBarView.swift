@@ -7,7 +7,6 @@ struct TabBarView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Tab items
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 1) {
                     ForEach(appState.sessions) { session in
@@ -28,9 +27,7 @@ struct TabBarView: View {
 
             Spacer()
 
-            // Toolbar buttons
             HStack(spacing: 4) {
-                // Active schedule indicator
                 let activeCount = appState.scheduler.commands.filter({ $0.isEnabled }).count
                 if activeCount > 0 {
                     Button(action: { showScheduleList = true }) {
@@ -43,27 +40,25 @@ struct TabBarView: View {
                         .foregroundColor(.orange)
                     }
                     .buttonStyle(.borderless)
-                    .help("\(activeCount) active schedule(s)")
+                    .help("\(activeCount) 個排程執行中")
                 }
 
-                // Add schedule button
                 Button(action: { showScheduleSheet = true }) {
                     Image(systemName: "clock.badge.plus")
                         .font(.system(size: 13))
                 }
                 .buttonStyle(.borderless)
-                .help("Add scheduled command (Cmd+Shift+S)")
+                .help("新增排程指令（Cmd+Shift+S）")
 
                 Divider()
                     .frame(height: 18)
 
-                // New tab button
                 Button(action: { appState.addNewSession() }) {
                     Image(systemName: "plus")
                         .font(.system(size: 13))
                 }
                 .buttonStyle(.borderless)
-                .help("New tab (Cmd+T)")
+                .help("新增分頁（Cmd+T）")
             }
             .padding(.horizontal, 8)
         }
@@ -80,18 +75,15 @@ struct TabItemView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            // Status indicator
             Circle()
                 .fill(session.isAlive ? Color.green : Color.red)
                 .frame(width: 8, height: 8)
 
-            // Tab title
             Text(session.title)
                 .font(.system(size: 12))
                 .lineLimit(1)
                 .frame(maxWidth: 130)
 
-            // Close button
             if isActive || isHovering {
                 Button(action: {
                     appState.closeSession(session.id)

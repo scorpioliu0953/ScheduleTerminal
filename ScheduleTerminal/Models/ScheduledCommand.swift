@@ -4,16 +4,25 @@ struct ScheduledCommand: Identifiable, Codable, Equatable {
     let id: UUID
     var command: String
     var executeAt: Date
-    var targetSessionIndex: Int // -1 = active tab, 0+ = specific tab index
+    var targetSessionIndex: Int // -1 = 目前分頁, 0+ = 指定分頁索引
     var isEnabled: Bool
     var repeatMode: RepeatMode
     var note: String
 
     enum RepeatMode: String, Codable, CaseIterable {
-        case once = "Once"
-        case daily = "Daily"
-        case weekly = "Weekly"
-        case monthly = "Monthly"
+        case once = "once"
+        case daily = "daily"
+        case weekly = "weekly"
+        case monthly = "monthly"
+
+        var displayName: String {
+            switch self {
+            case .once: return "單次"
+            case .daily: return "每日"
+            case .weekly: return "每週"
+            case .monthly: return "每月"
+            }
+        }
     }
 
     init(

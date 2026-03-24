@@ -20,7 +20,7 @@ class AppState: ObservableObject {
     func addNewSession() {
         sessionCounter += 1
         let session = TerminalSession()
-        session.title = "Terminal \(sessionCounter)"
+        session.title = "終端機 \(sessionCounter)"
         sessions.append(session)
         activeSessionId = session.id
     }

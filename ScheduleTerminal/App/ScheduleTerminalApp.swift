@@ -15,14 +15,14 @@ struct ScheduleTerminalApp: App {
         .defaultSize(width: 900, height: 600)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Tab") {
+                Button("新增分頁") {
                     appState.addNewSession()
                 }
                 .keyboardShortcut("t", modifiers: .command)
 
                 Divider()
 
-                Button("Close Tab") {
+                Button("關閉分頁") {
                     if let id = appState.activeSessionId {
                         appState.closeSession(id)
                     }
@@ -30,25 +30,25 @@ struct ScheduleTerminalApp: App {
                 .keyboardShortcut("w", modifiers: .command)
             }
 
-            CommandMenu("Schedule") {
-                Button("New Scheduled Command...") {
+            CommandMenu("排程") {
+                Button("新增排程指令...") {
                     NotificationCenter.default.post(name: .showScheduleSheet, object: nil)
                 }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
 
-                Button("Manage Schedules...") {
+                Button("管理排程...") {
                     NotificationCenter.default.post(name: .showScheduleList, object: nil)
                 }
                 .keyboardShortcut("m", modifiers: [.command, .shift])
             }
 
-            CommandMenu("Tab") {
-                Button("Next Tab") {
+            CommandMenu("分頁") {
+                Button("下一個分頁") {
                     appState.selectNextTab()
                 }
                 .keyboardShortcut("]", modifiers: [.command, .shift])
 
-                Button("Previous Tab") {
+                Button("上一個分頁") {
                     appState.selectPreviousTab()
                 }
                 .keyboardShortcut("[", modifiers: [.command, .shift])

@@ -35,19 +35,16 @@ struct TerminalContainerView: NSViewRepresentable {
 
             let currentIds = Set(appState.sessions.map { $0.id })
 
-            // Create terminal views for new sessions
             for session in appState.sessions where terminalViews[session.id] == nil {
                 createTerminal(for: session, in: container)
             }
 
-            // Remove terminals for closed sessions
             for (id, tv) in terminalViews where !currentIds.contains(id) {
                 tv.removeFromSuperview()
                 terminalViews.removeValue(forKey: id)
                 delegates.removeValue(forKey: id)
             }
 
-            // Show only the active terminal and set focus
             for (id, tv) in terminalViews {
                 let isActive = id == appState.activeSessionId
                 tv.isHidden = !isActive
@@ -65,31 +62,24 @@ struct TerminalContainerView: NSViewRepresentable {
             let tv = LocalProcessTerminalView(frame: container.bounds)
             tv.autoresizingMask = [.width, .height]
 
-            // Font - slightly larger default
             let fontSize = UserDefaults.standard.double(forKey: "terminalFontSize")
             let size = fontSize > 0 ? CGFloat(fontSize) : 15.0
             tv.font = NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
 
-            // Colors - dark theme
             tv.nativeBackgroundColor = NSColor(red: 0.11, green: 0.12, blue: 0.14, alpha: 1.0)
             tv.nativeForegroundColor = NSColor(red: 0.90, green: 0.90, blue: 0.90, alpha: 1.0)
             tv.caretColor = NSColor(red: 0.40, green: 0.85, blue: 0.40, alpha: 1.0)
-
-            // Terminal options
             tv.optionAsMetaKey = true
 
-            // Delegate
             let delegate = SessionDelegate(session: session)
             tv.processDelegate = delegate
             delegates[session.id] = delegate
 
-            // Start shell process
             let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
             let shellName = "-" + ((shell as NSString).lastPathComponent)
             let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
             tv.startProcess(executable: shell, execName: shellName, currentDirectory: homeDir)
 
-            // Store references
             session.terminalView = tv
             terminalViews[session.id] = tv
             container.addSubview(tv)
@@ -106,13 +96,11 @@ class SessionDelegate: NSObject, LocalProcessTerminalViewDelegate {
         self.session = session
     }
 
-    func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {
-        // Terminal resized
-    }
+    func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
 
     func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
         DispatchQueue.main.async {
-            self.session?.title = title.isEmpty ? "Terminal" : title
+            self.session?.title = title.isEmpty ? "終端機" : title
         }
     }
 
