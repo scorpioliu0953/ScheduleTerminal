@@ -61,7 +61,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S UTC')
-          sed -i '' "s|^\*Last built:.*$|*Last built: ${BUILD_DATE}*|" README.md
+          sed -i '' "s|^\*最後建置時間：.*$|*最後建置時間：${BUILD_DATE}*|" README.md
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
