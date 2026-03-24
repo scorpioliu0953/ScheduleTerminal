@@ -9,9 +9,19 @@ class AppState: ObservableObject {
     @AppStorage("terminalFontSize") var fontSize: Double = 15.0
 
     private var sessionCounter = 0
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         scheduler = CommandScheduler(appState: self)
+
+        // 將 scheduler 的變更轉發給 appState，讓 SwiftUI 視圖正確刷新
+        scheduler.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.objectWillChange.send()
+            }
+        }
+        .store(in: &cancellables)
+
         addNewSession()
         scheduler.loadCommands()
         scheduler.start()
