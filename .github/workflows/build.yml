@@ -1,0 +1,171 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Resolve Swift Packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ScheduleTerminal.xcodeproj \
+            -scheme ScheduleTerminal
+
+      - name: Build Release
+        run: |
+          xcodebuild -project ScheduleTerminal.xcodeproj \
+            -scheme ScheduleTerminal \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Create DMG
+        run: |
+          APP_PATH="build/Build/Products/Release/ScheduleTerminal.app"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Error: App not found at $APP_PATH"
+            find build -name "*.app" -type d
+            exit 1
+          fi
+
+          mkdir -p dmg_staging
+          cp -R "$APP_PATH" dmg_staging/
+          ln -s /Applications dmg_staging/Applications
+
+          hdiutil create \
+            -volname "Schedule Terminal" \
+            -srcfolder dmg_staging \
+            -ov -format UDZO \
+            "ScheduleTerminal-$(date +%Y%m%d).dmg"
+
+          # Also create a stable-name copy for releases
+          cp "ScheduleTerminal-$(date +%Y%m%d).dmg" ScheduleTerminal.dmg
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScheduleTerminal-DMG
+          path: ScheduleTerminal.dmg
+
+      - name: Update README
+        if: github.ref == 'refs/heads/main'
+        run: |
+          BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S UTC')
+
+          cat > README.md << 'EOF'
+# Schedule Terminal
+
+A native macOS terminal emulator with **scheduled command execution**.
+
+![macOS](https://img.shields.io/badge/macOS-13.0+-blue)
+![Swift](https://img.shields.io/badge/Swift-5.9-orange)
+![Build](https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build.yml?branch=main)
+
+## Features
+
+- **Full Terminal Emulation** — Complete VT100/xterm terminal powered by [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm)
+- **Tab Support** — Multiple terminal sessions with tab management
+- **Scheduled Commands** — Set a date/time to automatically execute commands
+- **Repeat Schedules** — One-time, daily, weekly, or monthly repetition
+- **Notifications** — System notifications when scheduled commands execute
+- **Dark Theme** — Clean dark terminal interface with larger default font
+- **Native macOS** — Built with SwiftUI + AppKit for optimal performance
+
+## Scheduled Command Feature
+
+The key feature: schedule commands to run at specific times.
+
+1. Press **Cmd+Shift+S** or click the clock icon to add a schedule
+2. Enter the command to execute
+3. Set the date and time
+4. Choose which tab to send it to (or the active tab)
+5. Optionally set it to repeat (daily / weekly / monthly)
+
+The command will be typed into the terminal and submitted automatically at the scheduled time.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+T` | New Tab |
+| `Cmd+W` | Close Tab |
+| `Cmd+Shift+S` | New Scheduled Command |
+| `Cmd+Shift+M` | Manage Schedules |
+| `Cmd+Shift+]` | Next Tab |
+| `Cmd+Shift+[` | Previous Tab |
+| `Cmd+1~9` | Switch to Tab 1–9 |
+
+## Installation
+
+1. Download the latest **DMG** from [Releases](../../releases) or [Actions artifacts](../../actions)
+2. Open the DMG file
+3. Drag **Schedule Terminal** to your Applications folder
+4. Launch from Applications
+
+> **Note:** On first launch, macOS may show a security warning. Go to **System Settings → Privacy & Security** and click "Open Anyway".
+
+## Build from Source
+
+```bash
+# Install XcodeGen
+brew install xcodegen
+
+# Clone and build
+git clone <repo-url> && cd ScheduleTerminal
+xcodegen generate
+xcodebuild -project ScheduleTerminal.xcodeproj \
+  -scheme ScheduleTerminal \
+  -configuration Release
+```
+
+## Requirements
+
+- macOS 13.0 (Ventura) or later
+- Apple Silicon or Intel Mac
+
+## Tech Stack
+
+- **SwiftUI** — App lifecycle and UI components
+- **AppKit** — Terminal view management and integration
+- **SwiftTerm** — VT100/xterm terminal emulation engine
+- **UserNotifications** — Schedule execution alerts
+EOF
+
+          echo "" >> README.md
+          echo "---" >> README.md
+          echo "*Last built: ${BUILD_DATE}*" >> README.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet || (git commit -m "docs: update README [skip ci]" && git push)
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ScheduleTerminal.dmg
+          generate_release_notes: true
