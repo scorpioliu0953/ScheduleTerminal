@@ -14,12 +14,22 @@ class TerminalSession: ObservableObject, Identifiable {
         terminalView?.send(txt: text)
     }
 
-    /// 送出指令到終端機（附加 CR 模擬按下 Enter）
-    /// 使用 \r（Carriage Return）而非 \n（Line Feed），
-    /// 因為鍵盤按 Enter 實際送出的是 \r，
-    /// 這樣在一般 shell 和 raw mode 程式（如 Claude Code）下都能正確送出。
+    /// 送出指令到終端機
+    ///
+    /// 先送出指令文字，延遲後再送 \r（Enter），
+    /// 確保 TUI 程式（如 Claude Code、vim 等 raw mode 應用）
+    /// 能正確將文字填入輸入框後再觸發送出。
+    /// 一般 shell（bash/zsh）也能正常運作。
     func sendCommand(_ command: String) {
-        terminalView?.send(txt: command + "\r")
+        guard let tv = terminalView else { return }
+
+        // 先逐行送文字（不含 Enter）
+        tv.send(txt: command)
+
+        // 延遲 150ms 後送 Enter，讓 TUI 程式有時間處理文字輸入
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            tv.send(txt: "\r")
+        }
     }
 
     func terminate() {
