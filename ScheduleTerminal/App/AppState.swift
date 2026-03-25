@@ -5,6 +5,8 @@ class AppState: ObservableObject {
     @Published var sessions: [TerminalSession] = []
     @Published var activeSessionId: UUID?
     @Published var scheduler: CommandScheduler!
+    @Published var showScheduleSheet = false
+    @Published var showScheduleList = false
 
     @AppStorage("terminalFontSize") var fontSize: Double = 15.0
 
@@ -14,7 +16,6 @@ class AppState: ObservableObject {
     init() {
         scheduler = CommandScheduler(appState: self)
 
-        // 將 scheduler 的變更轉發給 appState，讓 SwiftUI 視圖正確刷新
         scheduler.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async {
                 self?.objectWillChange.send()
@@ -74,5 +75,18 @@ class AppState: ObservableObject {
             return sessions[command.targetSessionIndex]
         }
         return sessions.first { $0.id == activeSessionId }
+    }
+}
+
+// MARK: - FocusedValue 讓選單指令能取得目前視窗的 AppState
+
+struct AppStateFocusedKey: FocusedValueKey {
+    typealias Value = AppState
+}
+
+extension FocusedValues {
+    var appState: AppState? {
+        get { self[AppStateFocusedKey.self] }
+        set { self[AppStateFocusedKey.self] = newValue }
     }
 }

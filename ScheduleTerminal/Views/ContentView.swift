@@ -1,15 +1,13 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var appState: AppState
-    @State private var showScheduleSheet = false
-    @State private var showScheduleList = false
+    @StateObject private var appState = AppState()
 
     var body: some View {
         VStack(spacing: 0) {
             TabBarView(
-                showScheduleSheet: $showScheduleSheet,
-                showScheduleList: $showScheduleList
+                showScheduleSheet: $appState.showScheduleSheet,
+                showScheduleList: $appState.showScheduleList
             )
 
             Divider()
@@ -18,17 +16,13 @@ struct ContentView: View {
                 .environmentObject(appState)
         }
         .background(Color(nsColor: NSColor(red: 0.11, green: 0.12, blue: 0.14, alpha: 1.0)))
-        .onReceive(NotificationCenter.default.publisher(for: .showScheduleSheet)) { _ in
-            showScheduleSheet = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showScheduleList)) { _ in
-            showScheduleList = true
-        }
-        .sheet(isPresented: $showScheduleSheet) {
+        .environmentObject(appState)
+        .focusedValue(\.appState, appState)
+        .sheet(isPresented: $appState.showScheduleSheet) {
             ScheduleView()
                 .environmentObject(appState)
         }
-        .sheet(isPresented: $showScheduleList) {
+        .sheet(isPresented: $appState.showScheduleList) {
             ScheduleListView()
                 .environmentObject(appState)
         }

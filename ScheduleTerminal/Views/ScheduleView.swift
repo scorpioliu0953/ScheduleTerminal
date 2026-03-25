@@ -59,7 +59,7 @@ struct ScheduleView: View {
                     Picker("送到：", selection: $targetTab) {
                         Text("目前使用中的分頁").tag(-1)
                         ForEach(Array(appState.sessions.enumerated()), id: \.element.id) { index, session in
-                            Text(session.title).tag(index)
+                            Text(session.displayTitle).tag(index)
                         }
                     }
                 }

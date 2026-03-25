@@ -100,7 +100,10 @@ class SessionDelegate: NSObject, LocalProcessTerminalViewDelegate {
 
     func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
         DispatchQueue.main.async {
-            self.session?.title = title.isEmpty ? "終端機" : title
+            // 只在沒有自訂標題時才更新（避免覆蓋使用者命名）
+            if self.session?.customTitle == nil {
+                self.session?.title = title.isEmpty ? "終端機" : title
+            }
         }
     }
 

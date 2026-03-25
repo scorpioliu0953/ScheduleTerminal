@@ -72,6 +72,8 @@ struct TabItemView: View {
     let isActive: Bool
     @EnvironmentObject var appState: AppState
     @State private var isHovering = false
+    @State private var isRenaming = false
+    @State private var editableTitle = ""
 
     var body: some View {
         HStack(spacing: 6) {
@@ -79,10 +81,28 @@ struct TabItemView: View {
                 .fill(session.isAlive ? Color.green : Color.red)
                 .frame(width: 8, height: 8)
 
-            Text(session.title)
+            // 標題：重新命名模式顯示 TextField，否則顯示 Text
+            if isRenaming {
+                TextField("", text: $editableTitle, onCommit: {
+                    session.setCustomTitle(editableTitle)
+                    isRenaming = false
+                })
+                .textFieldStyle(.plain)
                 .font(.system(size: 12))
-                .lineLimit(1)
                 .frame(maxWidth: 130)
+                .onExitCommand {
+                    isRenaming = false
+                }
+            } else {
+                Text(session.displayTitle)
+                    .font(.system(size: 12))
+                    .lineLimit(1)
+                    .frame(maxWidth: 130)
+                    .onTapGesture(count: 2) {
+                        editableTitle = session.displayTitle
+                        isRenaming = true
+                    }
+            }
 
             if isActive || isHovering {
                 Button(action: {
@@ -110,6 +130,21 @@ struct TabItemView: View {
         )
         .onHover { hovering in
             isHovering = hovering
+        }
+        .contextMenu {
+            Button("重新命名") {
+                editableTitle = session.displayTitle
+                isRenaming = true
+            }
+            if session.customTitle != nil {
+                Button("恢復預設名稱") {
+                    session.customTitle = nil
+                }
+            }
+            Divider()
+            Button("關閉分頁") {
+                appState.closeSession(session.id)
+            }
         }
     }
 }
