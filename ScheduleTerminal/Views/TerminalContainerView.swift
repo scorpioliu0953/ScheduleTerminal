@@ -9,8 +9,9 @@ struct TerminalContainerView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSView {
-        let container = NSView()
+        let container = DropContainerView()
         container.wantsLayer = true
+        container.coordinator = context.coordinator
         context.coordinator.containerView = container
         context.coordinator.appState = appState
         context.coordinator.syncTerminals()
@@ -78,12 +79,58 @@ struct TerminalContainerView: NSViewRepresentable {
             let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
             let shellName = "-" + ((shell as NSString).lastPathComponent)
             let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
-            tv.startProcess(executable: shell, execName: shellName, currentDirectory: homeDir)
+            let startDir = session.initialDirectory ?? homeDir
+            tv.startProcess(executable: shell, execName: shellName, currentDirectory: startDir)
 
             session.terminalView = tv
             terminalViews[session.id] = tv
             container.addSubview(tv)
         }
+    }
+}
+
+// MARK: - Drop Container View
+
+class DropContainerView: NSView {
+    weak var coordinator: TerminalContainerView.Coordinator?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        registerForDraggedTypes([.fileURL])
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        registerForDraggedTypes([.fileURL])
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) else {
+            return []
+        }
+        return .copy
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
+              let url = urls.first else {
+            return false
+        }
+
+        var isDirectory: ObjCBool = false
+        FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
+        let targetPath = isDirectory.boolValue ? url.path : url.deletingLastPathComponent().path
+
+        let escaped = targetPath.replacingOccurrences(of: "'", with: "'\\''")
+        let cdCommand = "cd '\(escaped)'"
+
+        if let appState = coordinator?.appState,
+           let activeId = appState.activeSessionId,
+           let session = appState.sessions.first(where: { $0.id == activeId }) {
+            session.sendCommand(cdCommand)
+        }
+
+        return true
     }
 }
 

@@ -1,12 +1,18 @@
 import SwiftUI
 import SwiftTerm
 
+struct SessionInfo: Codable {
+    var customTitle: String?
+    var currentDirectory: String?
+}
+
 class TerminalSession: ObservableObject, Identifiable {
     let id = UUID()
     @Published var title: String = "終端機"
     @Published var customTitle: String?
     @Published var isAlive: Bool = true
     @Published var currentDirectory: String?
+    var initialDirectory: String?
 
     weak var terminalView: LocalProcessTerminalView?
 

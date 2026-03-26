@@ -23,9 +23,51 @@ class AppState: ObservableObject {
         }
         .store(in: &cancellables)
 
-        addNewSession()
+        restoreSessions()
         scheduler.loadCommands()
         scheduler.start()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillTerminate),
+            name: NSApplication.willTerminateNotification,
+            object: nil
+        )
+    }
+
+    @objc private func appWillTerminate() {
+        saveSessions()
+    }
+
+    private func saveSessions() {
+        let infos = sessions.map { session in
+            SessionInfo(
+                customTitle: session.customTitle,
+                currentDirectory: session.currentDirectory
+            )
+        }
+        if let data = try? JSONEncoder().encode(infos) {
+            UserDefaults.standard.set(data, forKey: "savedSessions")
+        }
+    }
+
+    private func restoreSessions() {
+        guard let data = UserDefaults.standard.data(forKey: "savedSessions"),
+              let infos = try? JSONDecoder().decode([SessionInfo].self, from: data),
+              !infos.isEmpty else {
+            addNewSession()
+            return
+        }
+
+        for info in infos {
+            sessionCounter += 1
+            let session = TerminalSession()
+            session.title = info.customTitle ?? "終端機 \(sessionCounter)"
+            session.customTitle = info.customTitle
+            session.initialDirectory = info.currentDirectory
+            sessions.append(session)
+        }
+        activeSessionId = sessions.first?.id
     }
 
     func addNewSession() {
